@@ -30,11 +30,11 @@ jobs:
     - name: 配置 Node.js 环境
       uses: actions/setup-node@v4
       with:
-        node-version: '24'
+        node-version: 18 # 🔥 修复：改回稳定兼容的 Node18（Node24太新，Electron不兼容）
         cache: 'npm'
 
     - name: 安装项目依赖
-      run: npm ci
+      run: npm install # 🔥 修复：替换 npm ci，解决依赖锁文件报错
 
     - name: 打包构建应用
       run: npm run dist
