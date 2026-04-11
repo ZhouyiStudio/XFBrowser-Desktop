@@ -17,7 +17,7 @@
 > 安卓版本暂未支持隐私浏览功能，敬请期待后续更新。
 
 ## 贡献指南
-本项目基于 Electron 构建，`/docs` 目录使用 VitePress 搭建文档站点，依赖 Vue 相关组件。
+本项目基于 Electron 构建，`/docs` 目录使用 VitePress 搭建文档，依赖 Vue 相关组件。
 
 ### 安装依赖
 ```bash
