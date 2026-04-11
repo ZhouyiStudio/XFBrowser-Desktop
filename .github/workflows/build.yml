@@ -1,4 +1,4 @@
-name: Build and Release XF浏览器
+name: Build and Release XFBrowser
 
 on:
   push:
