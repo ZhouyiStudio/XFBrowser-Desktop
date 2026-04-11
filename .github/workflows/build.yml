@@ -1,16 +1,13 @@
-# 工作流名称：构建并发布 XFBrowser
+# 工作流-构建并发布 XFBrowser
 name: 构建并发布 XFBrowser
 
 # 触发条件
 on:
-  # 推送以 v 开头的标签时自动执行
   push:
     tags:
-      - 'v*'
-  # 向 main/master 分支提交合并请求时执行（测试构建）
+      - '*v*'
   pull_request:
-    branches: [ main, master ]
-  # 允许手动触发执行
+    branches: [ main,dev ]
   workflow_dispatch:
 
 # 任务集合
@@ -30,11 +27,11 @@ jobs:
     - name: 配置 Node.js 环境
       uses: actions/setup-node@v4
       with:
-        node-version: 18 # 🔥 修复：改回稳定兼容的 Node18（Node24太新，Electron不兼容）
+        node-version: 20
         cache: 'npm'
 
     - name: 安装项目依赖
-      run: npm install # 🔥 修复：替换 npm ci，解决依赖锁文件报错
+      run: npm install
 
     - name: 打包构建应用
       run: npm run dist
