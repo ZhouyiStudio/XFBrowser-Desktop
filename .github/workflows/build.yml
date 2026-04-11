@@ -1,14 +1,21 @@
-name: Build and Release XFBrowser
+# 工作流名称：构建并发布 XFBrowser
+name: 构建并发布 XFBrowser
 
+# 触发条件
 on:
+  # 推送以 v 开头的标签时自动执行
   push:
     tags:
       - 'v*'
+  # 向 main/master 分支提交合并请求时执行（测试构建）
   pull_request:
     branches: [ main, master ]
+  # 允许手动触发执行
   workflow_dispatch:
 
+# 任务集合
 jobs:
+  # 任务1：构建应用
   build:
     runs-on: ${{ matrix.os }}
 
@@ -17,45 +24,46 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
-    - name: Checkout code
+    - name: 检出代码
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
+    - name: 配置 Node.js 环境
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: 安装项目依赖
       run: npm ci
 
-    - name: Build application
+    - name: 打包构建应用
       run: npm run dist
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload build artifacts
+    - name: 上传构建产物
       uses: actions/upload-artifact@v4
       with:
-        name: XF浏览器-${{ matrix.os }}
+        name: XFBrowser-${{ matrix.os }}
         path: dist/
         retention-days: 30
 
+  # 任务2：发布版本
   release:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-    - name: Checkout code
+    - name: 检出代码
       uses: actions/checkout@v4
 
-    - name: Download all artifacts
+    - name: 下载所有构建产物
       uses: actions/download-artifact@v4
       with:
         path: ./artifacts
 
-    - name: Create Release
+    - name: 创建 GitHub 发布版本
       uses: softprops/action-gh-release@v1
       with:
         files: ./artifacts/**/*
