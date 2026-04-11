@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>浏览器设置</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container { 
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 32px;
+      width: 100%;
+      max-width: 500px;
+    }
+    h1 { 
+      font-size: 24px; 
+      margin-bottom: 24px; 
+      color: #333;
+      text-align: center;
+    }
+    .setting-group { 
+      margin-bottom: 20px; 
+    }
+    label { 
+      display: block; 
+      font-weight: 600; 
+      margin-bottom: 8px; 
+      color: #555;
+      font-size: 14px;
+    }
+    input[type="text"], 
+    select { 
+      width: 100%; 
+      padding: 10px 12px; 
+      border: 2px solid #e0e0e0;
+      border-radius: 6px; 
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    input[type="text"]:focus, 
+    select:focus { 
+      outline: none; 
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    .checkbox-label { 
+      display: flex; 
+      align-items: center; 
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 6px;
+      transition: background 0.2s ease;
+    }
+    .checkbox-label:hover {
+      background: #f5f5f5;
+    }
+    input[type="checkbox"] { 
+      width: 18px; 
+      height: 18px; 
+      margin-right: 10px; 
+      cursor: pointer;
+      accent-color: #667eea;
+    }
+    .buttons { 
+      display: flex; 
+      gap: 12px; 
+      justify-content: flex-end; 
+      margin-top: 32px;
+    }
+    button { 
+      padding: 10px 20px; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary { 
+      background: #f0f0f0;
+      color: #333;
+    }
+    .btn-secondary:hover { 
+      background: #e0e0e0;
+    }
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 24px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="fas fa-cog" style="margin-right: 8px; color: #667eea;"></i>浏览器设置</h1>
+    
+    <div class="setting-group">
+      <label for="homePageInput">主页</label>
+      <input type="text" id="homePageInput" placeholder="https://www.baidu.com">
+    </div>
+
+    <div class="setting-group">
+      <label for="searchEngine">搜索引擎</label>
+      <select id="searchEngine">
+        <option value="baidu">百度</option>
+        <option value="google">Google</option>
+        <option value="bing">Bing</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="setting-group">
+      <label class="checkbox-label">
+        <input type="checkbox" id="darkMode">
+        <span>启用深色模式</span>
+      </label>
+    </div>
+
+    <div class="buttons">
+      <button class="btn-secondary" id="cancelSetting">取消</button>
+      <button class="btn-primary" id="saveSetting">保存</button>
+    </div>
+  </div>
+
+  <script>
+    const homePageInput = document.getElementById('homePageInput')
+    const searchEngineSelect = document.getElementById('searchEngine')
+    const darkModeCheckbox = document.getElementById('darkMode')
+    const saveBtn = document.getElementById('saveSetting')
+    const cancelBtn = document.getElementById('cancelSetting')
+    const { ipcRenderer } = require('electron')
+
+    // 加载当前设置
+    const savedSettings = localStorage.getItem('browserSettings')
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings)
+      homePageInput.value = settings.homePage || 'https://www.baidu.com'
+      searchEngineSelect.value = settings.searchEngine || 'baidu'
+      darkModeCheckbox.checked = settings.darkMode || false
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const settings = {
+        homePage: homePageInput.value || 'https://www.baidu.com',
+        searchEngine: searchEngineSelect.value,
+        darkMode: darkModeCheckbox.checked
+      }
+      localStorage.setItem('browserSettings', JSON.stringify(settings))
+      ipcRenderer.send('settings-saved', settings)
+      window.close()
+    })
+
+    cancelBtn.addEventListener('click', () => {
+      window.close()
+    })
+  </script>
+</body>
+</html>

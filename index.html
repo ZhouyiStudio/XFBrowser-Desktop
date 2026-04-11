@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>XF浏览器</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body { display: flex; flex-direction: column; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+
+    .browser {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .tab-bar,
+    .toolbar {
+      flex: none;
+      -webkit-app-region: drag;
+    }
+
+    .tab-bar button,
+    .toolbar button,
+    .toolbar input {
+      -webkit-app-region: no-drag;
+    }
+
+    /* 工具栏 */
+    .toolbar {
+      display: flex;
+      padding: 10px 12px;
+      background: linear-gradient(to bottom, #f8f9fa, #f1f3f5);
+      gap: 8px;
+      align-items: center;
+      border-bottom: 1px solid #e9ecef;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: #fff;
+      color: #495057;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-width: 36px;
+      height: 36px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    button:hover {
+      background: #e7f1ff;
+      color: #0066cc;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f1f3f5;
+    }
+
+    /* 地址栏 */
+    #url {
+      flex: 1;
+      padding: 8px 14px;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+      color: #333;
+      transition: all 0.2s ease;
+    }
+
+    #url:focus {
+      outline: none;
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    #settings {
+      min-width: auto;
+      padding: 8px 10px;
+    }
+
+    #settings:hover {
+      background: #e7f1ff;
+      color: #0066cc;
+    }
+
+    /* 标签栏 */
+    .tab-bar {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+      gap: 8px;
+      border-bottom: 1px solid #e9ecef;
+      overflow-x: auto;
+      overflow-y: hidden;
+      min-height: 40px;
+    }
+
+    .tab-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .tab-bar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .tab-bar::-webkit-scrollbar-thumb {
+      background: #adb5bd;
+      border-radius: 2px;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      background: #f1f3f5;
+      border-radius: 6px 6px 0 0;
+      border: 1px solid #e9ecef;
+      border-bottom: none;
+      cursor: pointer;
+      gap: 8px;
+      min-width: 140px;
+      max-width: 200px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      background: #e7f1ff;
+      border-color: #b3d9ff;
+    }
+
+    .tab.active {
+      background: #fff;
+      font-weight: 600;
+      border: 1px solid #0066cc;
+      border-bottom: 1px solid #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+      color: #495057;
+    }
+
+    .tab.active .tab-title {
+      color: #0066cc;
+    }
+
+    .tab-close {
+      cursor: pointer;
+      padding: 2px 6px;
+      color: #868e96;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .tab-close:hover {
+      background: #ff6b6b;
+      color: white;
+    }
+
+    .new-tab-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .new-tab-btn:hover {
+      background: #e7f1ff;
+      color: #0066cc;
+    }
+
+    .new-tab-btn i {
+      font-size: 16px;
+    }
+
+    /* 窗口控制按钮 */
+    .window-control {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #495057;
+      font-size: 14px;
+      margin: 0 4px;
+      transition: all 0.2s ease;
+      -webkit-app-region: no-drag;
+    }
+
+    .window-control:hover {
+      background: #e7f1ff;
+      color: #0066cc;
+    }
+
+    #close:hover {
+      background: #ff5252;
+      color: white;
+    }
+
+    button i {
+      font-size: 14px;
+    }
+
+    /* 动画 */
+    @keyframes spinRotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    button:active i {
+      animation: spinRotate 0.6s ease-in-out;
+    }
+
+    /* 模态框 */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal-content {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      min-width: 400px;
+      max-width: 600px;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #868e96;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: #f1f3f5;
+      color: #333;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .setting-group {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-group label {
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .setting-group input[type="text"],
+    .setting-group select {
+      padding: 8px 12px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .setting-group input[type="text"]:focus,
+    .setting-group select:focus {
+      outline: none;
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .setting-group input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    .setting-group label:has(input[type="checkbox"]) {
+      display: flex;
+      align-items: center;
+      flex-direction: row;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 20px;
+      border-top: 1px solid #e9ecef;
+      background: #f8f9fa;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #0066cc;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+
+    .btn-secondary {
+      background: #e9ecef;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #dee2e6;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="browser">
+    <div class="tab-bar" id="tabBar">
+      <button class="new-tab-btn" id="newTabBtn"><i class="fas fa-plus"></i></button>
+      <div style="flex: 1;"></div>
+      <button class="window-control" id="minimize" title="最小化"><i class="fas fa-window-minimize"></i></button>
+      <button class="window-control" id="maximize" title="最大化"><i class="fas fa-window-maximize"></i></button>
+      <button class="window-control" id="close" title="关闭"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="toolbar">
+      <button id="back" title="后退"><i class="fas fa-arrow-left"></i></button>
+      <button id="forward" title="前进"><i class="fas fa-arrow-right"></i></button>
+      <button id="refresh" title="刷新"><i class="fas fa-sync-alt"></i></button>
+      <input type="text" id="url" placeholder="输入网址并回车">
+      <button id="home" title="主页" style="min-width: auto; padding: 8px 10px;"><i class="fas fa-home"></i></button>
+      <button id="settings" title="设置" style="min-width: auto; padding: 8px 10px;"><i class="fas fa-cog"></i></button>
+    </div>
+
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron')
+
+    const HOME_URL = 'https://www.baidu.com'
+    const tabBar = document.getElementById('tabBar')
+    const newTabBtn = document.getElementById('newTabBtn')
+    const toolbar = document.querySelector('.toolbar')
+    const urlInput = document.getElementById('url')
+    const backBtn = document.getElementById('back')
+    const forwardBtn = document.getElementById('forward')
+    const refreshBtn = document.getElementById('refresh')
+    const homeBtn = document.getElementById('home')
+    const settingsBtn = document.getElementById('settings')
+
+    let tabs = []
+    let activeTabId = null
+    let settings = {
+      homePage: HOME_URL,
+      searchEngine: 'baidu',
+      darkMode: false
+    }
+
+    function normalizeUrl(value) {
+      let url = value.trim()
+      if (!url) return HOME_URL
+      if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(url)) return url
+      return 'https://' + url
+    }
+
+    function renderTabs() {
+      const existingTabs = Array.from(tabBar.querySelectorAll('.tab'))
+      existingTabs.forEach(tab => tab.remove())
+
+      tabs.forEach(tab => {
+        const tabElement = document.createElement('div')
+        tabElement.className = 'tab'
+        if (tab.id === activeTabId) tabElement.classList.add('active')
+        tabElement.dataset.id = tab.id
+        tabElement.innerHTML = `
+          <span class="tab-title">${tab.title}</span>
+          <span class="tab-close"><i class="fas fa-times"></i></span>
+        `
+
+        tabElement.addEventListener('click', event => {
+          if (event.target.classList.contains('tab-close')) return
+          ipcRenderer.send('switch-tab', tab.id)
+        })
+
+        tabElement.querySelector('.tab-close').addEventListener('click', event => {
+          event.stopPropagation()
+          ipcRenderer.send('close-tab', tab.id)
+        })
+
+        tabBar.insertBefore(tabElement, newTabBtn)
+      })
+    }
+
+    function updateNav(state) {
+      activeTabId = state.activeTabId
+      tabs = state.tabs
+      renderTabs()
+      urlInput.value = state.url || ''
+      backBtn.disabled = !state.canGoBack
+      forwardBtn.disabled = !state.canGoForward
+      refreshBtn.disabled = false
+    }
+
+    newTabBtn.addEventListener('click', () => ipcRenderer.send('create-tab', HOME_URL))
+
+    urlInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        ipcRenderer.send('navigate', normalizeUrl(urlInput.value))
+      }
+    })
+
+    backBtn.addEventListener('click', () => ipcRenderer.send('go-back'))
+    forwardBtn.addEventListener('click', () => ipcRenderer.send('go-forward'))
+    refreshBtn.addEventListener('click', () => ipcRenderer.send('reload'))
+    homeBtn.addEventListener('click', () => ipcRenderer.send('navigate', settings.homePage))
+
+    // 窗口控制按钮
+    document.getElementById('minimize').addEventListener('click', () => ipcRenderer.send('window-minimize'))
+    document.getElementById('maximize').addEventListener('click', () => ipcRenderer.send('window-maximize'))
+    document.getElementById('close').addEventListener('click', () => ipcRenderer.send('window-close'))
+
+    // 设置功能
+    settingsBtn.addEventListener('click', () => ipcRenderer.send('open-settings'))
+
+    ipcRenderer.on('settings-updated', (event, newSettings) => {
+      settings = newSettings
+      if (settings.darkMode) {
+        document.body.style.filter = 'invert(1) hue-rotate(180deg)'
+      } else {
+        document.body.style.filter = 'none'
+      }
+    })
+
+    ipcRenderer.on('tabs-updated', (event, state) => updateNav(state))
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // 加载保存的设置
+      const savedSettings = localStorage.getItem('browserSettings')
+      if (savedSettings) {
+        settings = JSON.parse(savedSettings)
+        if (settings.darkMode) {
+          document.body.style.filter = 'invert(1) hue-rotate(180deg)'
+        }
+      }
+      
+      const headerHeight = tabBar.getBoundingClientRect().height + toolbar.getBoundingClientRect().height
+      ipcRenderer.send('renderer-ready', headerHeight)
+    })
+  </script>
+</body>
+</html>

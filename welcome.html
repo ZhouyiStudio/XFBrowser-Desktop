@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>欢迎使用 XFBrowser</title>
+  <!-- 引入 Font Awesome 6 图标库 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #1e293b;
+    }
+
+    /* Logo / 标题 */
+    .logo {
+      font-size: 52px;
+      font-weight: bold;
+      color: #2563eb;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 浏览器图标 */
+    .logo i {
+      font-size: 48px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    /* 快捷按钮组 */
+    .shortcuts {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+
+    .shortcut-btn {
+      width: 140px;
+      height: 140px;
+      background: white;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: #334155;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+      gap: 10px;
+    }
+
+    .shortcut-btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+      color: #2563eb;
+    }
+
+    /* 按钮图标样式 */
+    .shortcut-btn i {
+      font-size: 32px;
+      color: #2563eb
+    }
+
+    .shortcut-btn span {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* 底部文字 */
+    .footer {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="logo">
+    <i class="fa-solid fa-compass"></i>
+    XFBrowser
+  </div>
+  <div class="subtitle">"Where simple browsing shines!"</div>
+
+  <div class="shortcuts">
+    <a href="https://www.baidu.com" class="shortcut-btn">
+      <i class="fa-solid fa-rocket"></i>
+      <span>开始使用！</span>
+    </a>
+        <a href="https://github.com/ZhouyiStudio/XFBrowser-Windows" class="shortcut-btn">
+      <i class="fa-brands fa-github"></i>
+      <span>项目源代码</span>
+    </a>    
+    <a href="https://zhouyistudio.github.io/XFBrowser-Windows/" class="shortcut-btn">
+      <i class="fa-solid fa-file-lines"></i>
+      <span>项目文档</span>
+    </a>
+  </div>
+
+  <div class="footer">欢迎使用，祝您浏览愉快 🎉 | Project License under MIT!</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "name": "xfbrowser",
+  "version": "1.2.0-release",
+  "description": "XFbrowser – Where simple browsing shines",
+  "keywords": [
+    "XFBrowser",
+    "Browser",
+    "xuanfeng0316",
+    "XF",
+    "Zhouyi",
+    "YaoZhouyi",
+    "ZhouyiStudio"
+  ],
+  "homepage": "https://github.com/ZhouyiStudio/XFBrowser-Windows#readme",
+  "bugs": {
+    "url": "https://github.com/ZhouyiStudio/XFBrowser-Windows/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZhouyiStudio/XFBrowser-Windows.git"
+  },
+  "license": "Apache-2.0",
+  "author": "ZhouyiStudio",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "dist": "electron-builder --publish=never"
+  },
+  "devDependencies": {
+    "electron": "^41.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.zhouyistudio.xfbrowser",
+    "productName": "XFBrowser",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*",
+      "!build/**/*",
+      "!*.md",
+      "!package-lock.json",
+      "!node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
