@@ -1,3 +1,5 @@
+> [!IMPORTANT]
+> 1.2.5 Pre-Release 已发布，[#3](https://github.com/ZhouyiStudio/XFBrowser-Desktop/issues/3)问题仍未修复，敬请期待后续更新。
 <p align="center">
   <img width="264" height="264" alt="XFBrowser" src="https://github.com/user-attachments/assets/474ecb61-0f86-42a5-8779-126fc4d665ce" />
 </p>
