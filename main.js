@@ -1,5 +1,10 @@
 const { app, BrowserWindow, BrowserView, ipcMain } = require('electron')
 
+// 在应用启动前设置 SSL 相关选项
+app.commandLine.appendSwitch('ignore-certificate-errors')
+app.disableHardwareAcceleration()
+
+console.warn('XFBrowsr-Desktop Started!')
 const HOME_URL = 'https://www.baidu.com'
 let VIEW_TOP = 96
 let mainWindow = null
@@ -29,8 +34,8 @@ function sendTabsState() {
     tabs: tabs.map(tab => ({ id: tab.id, title: tab.title, url: tab.url })),
     activeTabId,
     url: activeTab ? activeTab.url : '',
-    canGoBack: activeTab ? activeTab.view.webContents.canGoBack() : false,
-    canGoForward: activeTab ? activeTab.view.webContents.canGoForward() : false
+    canGoBack: activeTab ? activeTab.view.webContents.navigationHistory.canGoBack() : false,
+    canGoForward: activeTab ? activeTab.view.webContents.navigationHistory.canGoForward() : false
   }
   mainWindow.webContents.send('tabs-updated', state)
 }
@@ -94,6 +99,13 @@ function createBrowserView(url) {
       contextIsolation: true
     }
   })
+  
+  // 处理证书错误 - 直接接受
+  view.webContents.on('certificate-error', (event, url, error, certificate, callback) => {
+    event.preventDefault()
+    callback(true)
+  })
+  
   view.webContents.loadURL(url)
   return view
 }
@@ -181,14 +193,14 @@ app.whenReady().then(() => {
   })
   ipcMain.on('go-back', () => {
     const activeTab = getActiveTab()
-    if (activeTab && activeTab.view.webContents.canGoBack()) {
-      activeTab.view.webContents.goBack()
+    if (activeTab && activeTab.view.webContents.navigationHistory.canGoBack()) {
+      activeTab.view.webContents.navigationHistory.goBack()
     }
   })
   ipcMain.on('go-forward', () => {
     const activeTab = getActiveTab()
-    if (activeTab && activeTab.view.webContents.canGoForward()) {
-      activeTab.view.webContents.goForward()
+    if (activeTab && activeTab.view.webContents.navigationHistory.canGoForward()) {
+      activeTab.view.webContents.navigationHistory.goForward()
     }
   })
   ipcMain.on('reload', () => {
