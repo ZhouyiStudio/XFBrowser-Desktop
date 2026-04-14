@@ -1,3 +1,5 @@
+> [!IMPORTANT]
+> 1.2.5 Pre-Release 已发布，[#3](https://github.com/ZhouyiStudio/XFBrowser-Desktop/issues/3)问题仍未修复，敬请期待后续更新。
 <p align="center">
   <img width="264" height="264" alt="XFBrowser" src="https://github.com/user-attachments/assets/474ecb61-0f86-42a5-8779-126fc4d665ce" />
 </p>
@@ -5,6 +7,20 @@
 <h1 align="center">XFBrowser</h1>
 <p align="center">"Where simple browsing shines!"</p>
 <p align="center">一款简洁、高效、支持多标签页的跨平台桌面浏览器</p>
+
+## Star历史
+
+> [!TIP]
+> 如果喜欢请给项目点个Star⭐哦，谢谢啦！o(*￣▽￣*)ブ
+> 如果能协助改进这个项目就更好啦！欢迎提交PR！
+
+<a href="https://www.star-history.com/?repos=ZhouyiStudio%2FXFBrowser-Desktop&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ZhouyiStudio/XFBrowser-Desktop&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ZhouyiStudio/XFBrowser-Desktop&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ZhouyiStudio/XFBrowser-Desktop&type=date&legend=top-left" />
+ </picture>
+</a>
 
 ## 功能特性
 - 🚀 流畅高效的网页浏览体验
@@ -14,7 +30,7 @@
 - 🎨 现代化的界面设计
 
 > [!IMPORTANT]
-> 安卓版本暂未支持隐私浏览功能，敬请期待后续更新。
+> 暂未支持安卓版本的隐私浏览功能，敬请期待后续更新。
 
 ## 贡献指南
 本项目基于 Electron 构建，`/docs` 目录使用 VitePress 搭建文档，依赖 Vue 相关组件。
