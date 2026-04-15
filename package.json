@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "electron": "^41.2.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^26.8.1",
     "vitepress": "^2.0.0-alpha.17",
     "vue": "^3.5.32"
   },
