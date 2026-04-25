@@ -4,8 +4,11 @@
 
 ## 维护者
 
-
-
+| [xuanfeng0316](https://github.com/xuanfeng0316) | [Zhouyi](https://github.com/ZhouyiStudio) |
+| ---- | ---- |
+| <img src="https://avatars.githubusercontent.com/u/256921635?v=4" width="50" style="border-radius:50%"> | <img src="https://avatars.githubusercontent.com/u/160443385?s=48&v=4" width="50" style="border-radius:50%"> |
+| **安卓版本开发者** | 桌面版本开发者 |
+| （项目发起者） |  |
 ## 快速开始
 
 ### 环境要求
