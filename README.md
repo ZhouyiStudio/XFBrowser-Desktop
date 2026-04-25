@@ -87,6 +87,7 @@ npm run build:linux
 
 ## 问题反馈
 有任何问题请提交Issue!
+也可通过：[交流论坛](XFBrowser.discourse.group) 与我们交流
 > [!NOTE]  
 > 提交前请查看下面的已知问题列表，以免重复提交！
 
