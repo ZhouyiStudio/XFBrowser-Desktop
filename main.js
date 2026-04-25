@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain } = require('electron')
+const { app, BrowserWindow, BrowserView, ipcMain, Menu, MenuItem, clipboard } = require('electron')
 
 // 在应用启动前设置 SSL 相关选项
 app.commandLine.appendSwitch('ignore-certificate-errors')
@@ -105,7 +105,8 @@ function createBrowserView(url) {
   const view = new BrowserView({
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      devTools: true
     }
   })
   
@@ -117,6 +118,135 @@ function createBrowserView(url) {
   })
   
   view.webContents.loadURL(url)
+  
+  // 添加右键菜单
+  view.webContents.on('context-menu', (event, params) => {
+    const menu = new Menu()
+    
+    // 后退
+    menu.append(new MenuItem({
+      label: '后退',
+      enabled: params.canGoBack,
+      click: () => view.webContents.goBack()
+    }))
+    
+    // 前进
+    menu.append(new MenuItem({
+      label: '前进',
+      enabled: params.canGoForward,
+      click: () => view.webContents.goForward()
+    }))
+    
+    menu.append(new MenuItem({ type: 'separator' }))
+    
+    // 刷新
+    menu.append(new MenuItem({
+      label: '刷新',
+      click: () => view.webContents.reload()
+    }))
+    
+    // 强制刷新
+    menu.append(new MenuItem({
+      label: '强制刷新',
+      click: () => view.webContents.reloadIgnoringCache()
+    }))
+    
+    menu.append(new MenuItem({ type: 'separator' }))
+    
+    // 检查元素 (仅在开发者模式下)
+    if (params.hasSelection) {
+      menu.append(new MenuItem({
+        label: '复制',
+        click: () => view.webContents.copy()
+      }))
+    }
+    
+    menu.append(new MenuItem({
+      label: '粘贴',
+      enabled: params.canPaste,
+      click: () => view.webContents.paste()
+    }))
+    
+    menu.append(new MenuItem({
+      label: '全选',
+      click: () => view.webContents.selectAll()
+    }))
+    
+    menu.append(new MenuItem({ type: 'separator' }))
+    
+    // 如果有链接，添加在新标签页中打开
+    if (params.linkURL) {
+      menu.append(new MenuItem({
+        label: '在新标签页中打开链接',
+        click: () => createTab(params.linkURL, true)
+      }))
+      menu.append(new MenuItem({
+        label: '复制链接地址',
+        click: () => {
+          clipboard.writeText(params.linkURL)
+        }
+      }))
+      menu.append(new MenuItem({ type: 'separator' }))
+    }
+    
+    // 如果有图片，添加图片相关选项
+    if (params.srcURL) {
+      menu.append(new MenuItem({
+        label: '在新标签页中打开图片',
+        click: () => createTab(params.srcURL, true)
+      }))
+      menu.append(new MenuItem({
+        label: '复制图片地址',
+        click: () => {
+          clipboard.writeText(params.srcURL)
+        }
+      }))
+      menu.append(new MenuItem({ type: 'separator' }))
+    }
+    
+    // 检查元素
+    menu.append(new MenuItem({
+      label: '检查元素',
+      click: () => view.webContents.inspectElement(params.x, params.y)
+    }))
+    
+    // 查看页面源代码
+    menu.append(new MenuItem({
+      label: '查看页面源代码',
+      click: () => {
+        const sourceUrl = `view-source:${view.webContents.getURL()}`
+        createTab(sourceUrl, true)
+      }
+    }))
+    
+    menu.popup()
+  })
+  
+  // 添加键盘快捷键
+  view.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown') {
+      // F12 或 Ctrl+Shift+I 打开开发者工具
+      if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+        event.preventDefault()
+        if (view.webContents.isDevToolsOpened()) {
+          view.webContents.closeDevTools()
+        } else {
+          view.webContents.openDevTools()
+        }
+      }
+      // Ctrl+R 刷新
+      else if (input.control && input.key.toLowerCase() === 'r') {
+        event.preventDefault()
+        view.webContents.reload()
+      }
+      // Ctrl+Shift+R 强制刷新
+      else if (input.control && input.shift && input.key.toLowerCase() === 'r') {
+        event.preventDefault()
+        view.webContents.reloadIgnoringCache()
+      }
+    }
+  })
+  
   return view
 }
 
