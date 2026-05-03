@@ -491,7 +491,7 @@
         `
 
         tabElement.addEventListener('click', event => {
-          if (event.target.classList.contains('tab-close')) return
+          if (event.target.closest('.tab-close')) return
           ipcRenderer.send('switch-tab', tab.id)
         })
 

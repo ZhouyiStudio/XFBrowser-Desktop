@@ -244,6 +244,11 @@ function createBrowserView(url) {
         event.preventDefault()
         view.webContents.reloadIgnoringCache()
       }
+      // Ctrl+W 关闭当前标签页
+      else if (input.control && input.key.toLowerCase() === 'w') {
+        event.preventDefault()
+        closeTab(activeTabId)
+      }
     }
   })
   
