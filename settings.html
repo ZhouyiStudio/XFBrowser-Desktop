@@ -130,8 +130,8 @@
 
     <div class="setting-group">
       <label class="checkbox-label">
-        <input type="checkbox" id="darkMode">
-        <span>启用深色模式</span>
+        <input type="checkbox" id="downloadIntercept" checked>
+        <span>启用下载拦截确认</span>
       </label>
     </div>
 
@@ -145,26 +145,28 @@
     const homePageInput = document.getElementById('homePageInput')
     const searchEngineSelect = document.getElementById('searchEngine')
     const darkModeCheckbox = document.getElementById('darkMode')
+    const downloadInterceptCheckbox = document.getElementById('downloadIntercept')
     const saveBtn = document.getElementById('saveSetting')
     const cancelBtn = document.getElementById('cancelSetting')
     const { ipcRenderer } = require('electron')
 
-    // 加载当前设置
-    const savedSettings = localStorage.getItem('browserSettings')
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings)
+    // 从主进程获取当前设置
+    ipcRenderer.send('get-settings')
+    
+    ipcRenderer.on('settings-loaded', (event, settings) => {
       homePageInput.value = settings.homePage || 'https://www.baidu.com'
       searchEngineSelect.value = settings.searchEngine || 'baidu'
       darkModeCheckbox.checked = settings.darkMode || false
-    }
+      downloadInterceptCheckbox.checked = settings.downloadIntercept !== false
+    })
 
     saveBtn.addEventListener('click', () => {
       const settings = {
         homePage: homePageInput.value || 'https://www.baidu.com',
         searchEngine: searchEngineSelect.value,
-        darkMode: darkModeCheckbox.checked
+        darkMode: darkModeCheckbox.checked,
+        downloadIntercept: downloadInterceptCheckbox.checked
       }
-      localStorage.setItem('browserSettings', JSON.stringify(settings))
       ipcRenderer.send('settings-saved', settings)
       window.close()
     })

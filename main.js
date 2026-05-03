@@ -1,4 +1,6 @@
 const { app, BrowserWindow, BrowserView, ipcMain, Menu, MenuItem, clipboard } = require('electron')
+const fs = require('fs')
+const path = require('path')
 
 // 在应用启动前设置 SSL 相关选项
 app.commandLine.appendSwitch('ignore-certificate-errors')
@@ -9,9 +11,40 @@ const HOME_URL = 'https://www.baidu.com'
 let VIEW_TOP = 96
 let mainWindow = null
 let settingsWindow = null
+let browserSettings = {
+  homePage: 'https://www.baidu.com',
+  searchEngine: 'baidu',
+  darkMode: false,
+  downloadIntercept: true
+}
 let tabs = []
 let activeTabId = null
 let rendererReady = false
+
+// 加载设置
+function loadSettings() {
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json')
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf8')
+      browserSettings = { ...browserSettings, ...JSON.parse(data) }
+      console.log('[Settings] Loaded settings:', browserSettings)
+    }
+  } catch (error) {
+    console.error('[Settings] Failed to load settings:', error)
+  }
+}
+
+// 保存设置
+function saveSettings() {
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json')
+    fs.writeFileSync(settingsPath, JSON.stringify(browserSettings, null, 2))
+    console.log('[Settings] Saved settings:', browserSettings)
+  } catch (error) {
+    console.error('[Settings] Failed to save settings:', error)
+  }
+}
 
 function getActiveTab() {
   return tabs.find(tab => tab.id === activeTabId)
@@ -252,6 +285,104 @@ function createBrowserView(url) {
     }
   })
   
+  // 添加下载拦截
+  view.webContents.session.on('will-download', (event, item, webContents) => {
+    console.log(`[Download] Download requested: ${item.getFilename()}`)
+    
+    if (browserSettings.downloadIntercept) {
+      event.preventDefault()
+      
+      const options = {
+        type: 'question',
+        buttons: ['下载', '取消'],
+        defaultId: 0,
+        cancelId: 1,
+        title: '下载确认',
+        message: `是否下载文件 "${item.getFilename()}"？`,
+        detail: `文件大小: ${item.getTotalBytes() > 0 ? (item.getTotalBytes() / 1024 / 1024).toFixed(2) + ' MB' : '未知'}\n来源: ${item.getURL()}`
+      }
+      
+      const { dialog } = require('electron')
+      dialog.showMessageBox(mainWindow, options).then(result => {
+        if (result.response === 0) { // 用户选择了下载
+          console.log(`[Download] User confirmed download: ${item.getFilename()}`)
+          startDownload(item)
+        } else {
+          console.log(`[Download] User cancelled download: ${item.getFilename()}`)
+        }
+      })
+    } else {
+      // 如果未启用拦截，直接下载到默认位置
+      startDownload(item)
+    }
+  })
+
+  function startDownload(item) {
+    const path = require('path')
+    const os = require('os')
+    item.setSavePath(path.join(os.homedir(), 'Downloads', item.getFilename()))
+    
+    // 发送下载开始事件
+    mainWindow.webContents.send('download-started', {
+      filename: item.getFilename(),
+      total: item.getTotalBytes()
+    })
+    
+    item.on('updated', (event, state) => {
+      if (state === 'progressing') {
+        if (!item.isPaused()) {
+          // 发送下载进度事件
+          mainWindow.webContents.send('download-progress', {
+            filename: item.getFilename(),
+            received: item.getReceivedBytes(),
+            total: item.getTotalBytes()
+          })
+        }
+      }
+    })
+    
+    item.once('done', (event, state) => {
+      if (state === 'completed') {
+        console.log(`[Download] Download completed: ${item.getFilename()}`)
+        mainWindow.webContents.send('download-completed', {
+          filename: item.getFilename(),
+          url: item.getURL(),
+          total: item.getTotalBytes()
+        })
+        const { dialog } = require('electron')
+        dialog.showMessageBox(mainWindow, {
+          type: 'info',
+          title: '下载完成',
+          message: `文件 "${item.getFilename()}" 下载完成`,
+          buttons: ['确定']
+        })
+      } else if (state === 'cancelled') {
+        console.log(`[Download] Download cancelled: ${item.getFilename()}`)
+        mainWindow.webContents.send('download-failed', {
+          filename: item.getFilename(),
+          url: item.getURL(),
+          reason: 'cancelled'
+        })
+      } else {
+        console.log(`[Download] Download failed: ${item.getFilename()}`)
+        mainWindow.webContents.send('download-failed', {
+          filename: item.getFilename(),
+          url: item.getURL(),
+          reason: state
+        })
+        const { dialog } = require('electron')
+        dialog.showMessageBox(mainWindow, {
+          type: 'error',
+          title: '下载失败',
+          message: `文件 "${item.getFilename()}" 下载失败`,
+          buttons: ['确定']
+        })
+      }
+    })
+    
+    item.startDownload()
+  }
+  
   return view
 }
 
@@ -321,7 +452,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  console.log('[app] App ready, creating window')
+  console.log('[app] App ready, loading settings and creating window')
+  loadSettings()
   createWindow()
 
   ipcMain.on('renderer-ready', (event, headerHeight) => {
@@ -427,7 +559,14 @@ app.whenReady().then(() => {
 
   ipcMain.on('settings-saved', (event, settings) => {
     console.log('[IPC] settings-saved, settings:', settings)
+    browserSettings = { ...browserSettings, ...settings }
+    saveSettings()
     mainWindow.webContents.send('settings-updated', settings)
+  })
+
+  ipcMain.on('get-settings', (event) => {
+    console.log('[IPC] get-settings requested')
+    event.sender.send('settings-loaded', browserSettings)
   })
 })
 

@@ -92,6 +92,41 @@
       box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
     }
 
+    /* 下载状态 */
+    .download-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #e7f1ff;
+      border: 1px solid #b8daff;
+      border-radius: 6px;
+      color: #0066cc;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 60px;
+      justify-content: center;
+      margin: 0 4px;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .download-status:hover {
+      background: #d4e8ff;
+      border-color: #99c9ff;
+    }
+
+    .download-status i {
+      font-size: 12px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     #settings {
       min-width: auto;
       padding: 8px 10px;
@@ -424,6 +459,119 @@
       background: #dee2e6;
     }
 
+    /* 下载历史样式 */
+    .download-history-modal .modal-content {
+      max-width: 700px;
+    }
+
+    .download-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #e9ecef;
+      transition: background 0.2s ease;
+    }
+
+    .download-item:hover {
+      background: #f8f9fa;
+    }
+
+    .download-item:last-child {
+      border-bottom: none;
+    }
+
+    .download-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .download-icon.completed {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .download-icon.failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .download-icon.downloading {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .download-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .download-filename {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .download-details {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      gap: 12px;
+    }
+
+    .download-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .download-action-btn {
+      padding: 6px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .download-action-btn.open {
+      background: #0066cc;
+      color: white;
+    }
+
+    .download-action-btn.open:hover {
+      background: #0052a3;
+    }
+
+    .download-action-btn.delete {
+      background: #dc3545;
+      color: white;
+    }
+
+    .download-action-btn.delete:hover {
+      background: #c82333;
+    }
+
+    .no-downloads {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .no-downloads i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
   </style>
 </head>
 <body>
@@ -441,10 +589,34 @@
       <button id="forward" title="前进"><i class="fas fa-arrow-right"></i></button>
       <button id="refresh" title="刷新"><i class="fas fa-sync-alt"></i></button>
       <input type="text" id="url" placeholder="输入网址并回车">
+      <div id="download-status" class="download-status">
+        <i class="fas fa-download"></i>
+        <span id="download-progress">0%</span>
+      </div>
       <button id="home" title="主页" style="min-width: auto; padding: 8px 10px;"><i class="fas fa-home"></i></button>
       <button id="settings" title="设置" style="min-width: auto; padding: 8px 10px;"><i class="fas fa-cog"></i></button>
     </div>
 
+  </div>
+
+  <!-- 下载历史模态框 -->
+  <div id="downloadHistoryModal" class="modal download-history-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-history" style="margin-right: 8px;"></i>下载历史</h2>
+        <button class="modal-close" id="closeDownloadHistory">&times;</button>
+      </div>
+      <div class="modal-body" id="downloadHistoryBody">
+        <div class="no-downloads">
+          <i class="fas fa-download"></i>
+          <div>暂无下载记录</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="clearDownloadHistory">清空历史</button>
+        <button class="btn-primary" id="closeDownloadHistoryBtn">关闭</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -467,6 +639,103 @@
       homePage: HOME_URL,
       searchEngine: 'baidu',
       darkMode: false
+    }
+
+    // 下载历史管理
+    let downloadHistory = []
+
+    function loadDownloadHistory() {
+      const saved = localStorage.getItem('downloadHistory')
+      if (saved) {
+        downloadHistory = JSON.parse(saved)
+      }
+    }
+
+    function saveDownloadHistory() {
+      localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory))
+    }
+
+    function addDownloadToHistory(filename, url, size, status = 'completed') {
+      const download = {
+        id: Date.now(),
+        filename,
+        url,
+        size,
+        status,
+        timestamp: new Date().toISOString(),
+        path: require('path').join(require('os').homedir(), 'Downloads', filename)
+      }
+      downloadHistory.unshift(download) // 添加到开头
+      // 限制历史记录数量
+      if (downloadHistory.length > 100) {
+        downloadHistory = downloadHistory.slice(0, 100)
+      }
+      saveDownloadHistory()
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '未知'
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(1024))
+      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString)
+      return date.toLocaleString('zh-CN')
+    }
+
+    function renderDownloadHistory() {
+      const body = document.getElementById('downloadHistoryBody')
+      
+      if (downloadHistory.length === 0) {
+        body.innerHTML = `
+          <div class="no-downloads">
+            <i class="fas fa-download"></i>
+            <div>暂无下载记录</div>
+          </div>
+        `
+        return
+      }
+
+      body.innerHTML = downloadHistory.map(download => `
+        <div class="download-item">
+          <div class="download-icon ${download.status}">
+            <i class="fas fa-${download.status === 'completed' ? 'check' : download.status === 'failed' ? 'times' : 'download'}"></i>
+          </div>
+          <div class="download-info">
+            <div class="download-filename" title="${download.filename}">${download.filename}</div>
+            <div class="download-details">
+              <span>大小: ${formatFileSize(download.size)}</span>
+              <span>时间: ${formatDate(download.timestamp)}</span>
+              <span>来源: ${new URL(download.url).hostname}</span>
+            </div>
+          </div>
+          <div class="download-actions">
+            ${download.status === 'completed' ? `<button class="download-action-btn open" onclick="openDownloadFile('${download.path.replace(/\\/g, '\\\\')}')">打开</button>` : ''}
+            <button class="download-action-btn delete" onclick="deleteDownloadHistory(${download.id})">删除</button>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    function openDownloadFile(filePath) {
+      const { shell } = require('electron')
+      shell.showItemInFolder(filePath)
+    }
+
+    function deleteDownloadHistory(id) {
+      downloadHistory = downloadHistory.filter(item => item.id !== id)
+      saveDownloadHistory()
+      renderDownloadHistory()
+    }
+
+    function clearDownloadHistory() {
+      if (confirm('确定要清空所有下载历史记录吗？')) {
+        downloadHistory = []
+        saveDownloadHistory()
+        renderDownloadHistory()
+      }
     }
 
     function normalizeUrl(value) {
@@ -544,7 +813,74 @@
       }
     })
 
+    // 下载状态处理
+    const downloadStatus = document.getElementById('download-status')
+    const downloadProgress = document.getElementById('download-progress')
+
+    downloadStatus.addEventListener('click', () => {
+      renderDownloadHistory()
+      document.getElementById('downloadHistoryModal').classList.add('show')
+    })
+
+    ipcRenderer.on('download-started', (event, data) => {
+      downloadStatus.style.display = 'flex'
+      downloadProgress.textContent = '0%'
+    })
+
+    ipcRenderer.on('download-progress', (event, data) => {
+      const percent = Math.round((data.received / data.total) * 100)
+      downloadProgress.textContent = `${percent}%`
+    })
+
+    ipcRenderer.on('download-completed', (event, data) => {
+      downloadProgress.textContent = '100%'
+      addDownloadToHistory(data.filename, data.url || '', data.total || 0, 'completed')
+      setTimeout(() => {
+        downloadStatus.style.display = 'none'
+      }, 2000) // 2秒后隐藏
+    })
+
+    ipcRenderer.on('download-failed', (event, data) => {
+      downloadProgress.textContent = '失败'
+      downloadStatus.style.background = '#ffe6e6'
+      downloadStatus.style.borderColor = '#ff9999'
+      downloadStatus.style.color = '#cc0000'
+      addDownloadToHistory(data.filename, data.url || '', 0, 'failed')
+      setTimeout(() => {
+        downloadStatus.style.display = 'none'
+        // 恢复样式
+        downloadStatus.style.background = '#e7f1ff'
+        downloadStatus.style.borderColor = '#b8daff'
+        downloadStatus.style.color = '#0066cc'
+      }, 3000) // 3秒后隐藏
+    })
+
     ipcRenderer.on('tabs-updated', (event, state) => updateNav(state))
+
+    // 下载历史模态框控制
+    const downloadHistoryModal = document.getElementById('downloadHistoryModal')
+    const closeDownloadHistory = document.getElementById('closeDownloadHistory')
+    const closeDownloadHistoryBtn = document.getElementById('closeDownloadHistoryBtn')
+    const clearDownloadHistoryBtn = document.getElementById('clearDownloadHistory')
+
+    closeDownloadHistory.addEventListener('click', () => {
+      downloadHistoryModal.classList.remove('show')
+    })
+
+    closeDownloadHistoryBtn.addEventListener('click', () => {
+      downloadHistoryModal.classList.remove('show')
+    })
+
+    clearDownloadHistoryBtn.addEventListener('click', () => {
+      clearDownloadHistory()
+    })
+
+    // 点击模态框背景关闭
+    downloadHistoryModal.addEventListener('click', (event) => {
+      if (event.target === downloadHistoryModal) {
+        downloadHistoryModal.classList.remove('show')
+      }
+    })
 
     window.addEventListener('DOMContentLoaded', () => {
       // 加载保存的设置
@@ -556,8 +892,52 @@
         }
       }
       
+      // 加载下载历史
+      loadDownloadHistory()
+      
+      // 如果没有下载历史，添加一些示例数据
+      if (downloadHistory.length === 0) {
+        const exampleDownloads = [
+          {
+            id: Date.now() - 300000,
+            filename: 'example-image.jpg',
+            url: 'https://example.com/image.jpg',
+            size: 2048576,
+            status: 'completed',
+            timestamp: new Date(Date.now() - 300000).toISOString(),
+            path: require('path').join(require('os').homedir(), 'Downloads', 'example-image.jpg')
+          },
+          {
+            id: Date.now() - 600000,
+            filename: 'document.pdf',
+            url: 'https://example.com/document.pdf',
+            size: 5242880,
+            status: 'completed',
+            timestamp: new Date(Date.now() - 600000).toISOString(),
+            path: require('path').join(require('os').homedir(), 'Downloads', 'document.pdf')
+          },
+          {
+            id: Date.now() - 900000,
+            filename: 'failed-download.zip',
+            url: 'https://example.com/failed.zip',
+            size: 0,
+            status: 'failed',
+            timestamp: new Date(Date.now() - 900000).toISOString(),
+            path: require('path').join(require('os').homedir(), 'Downloads', 'failed-download.zip')
+          }
+        ]
+        downloadHistory = exampleDownloads
+        saveDownloadHistory()
+      }
+      
       const headerHeight = tabBar.getBoundingClientRect().height + toolbar.getBoundingClientRect().height
       ipcRenderer.send('renderer-ready', headerHeight)
+
+      // 测试下载状态显示
+      setTimeout(() => {
+        downloadStatus.style.display = 'flex'
+        downloadProgress.textContent = '50%'
+      }, 1000)
     })
   </script>
 </body>
