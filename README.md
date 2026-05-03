@@ -102,6 +102,7 @@ XFBrowser/
 ├── settings.html        # 设置页面
 ├── welcome.html         # 欢迎页面
 ├── package.json         # 项目配置
+├── XFBrowser.iss        # 打包配置
 └── .npmignore          # 打包忽略文件
 ```
 
