@@ -1,0 +1,18 @@
+
+<link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+<script>
+    var gitalk = new Gitalk({
+        clientID: '8e2585b74fb088fa5c1b', //clientID 
+        clientSecret: '34d45f15101fe1c1746b0ce9455760a1f628d989', //clientSecret
+        repo: 'gitalk-comments', // 评论仓库名
+        owner: 'crazymryan',
+        admin: ['crazymryan'], //管理人
+        id: location.pathname, // 返回当前 URL 的路径部分作为id
+        language:'zh-CN', //语言
+        distractionFreeMode: false  // 无干扰模式
+    })
+    gitalk.render('gitalk-container')
+</script>

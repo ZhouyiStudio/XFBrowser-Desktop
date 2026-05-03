@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain, Menu, MenuItem, clipboard } = require('electron')
+const { app, BrowserWindow, BrowserView, ipcMain, Menu, MenuItem, clipboard, nativeTheme } = require('electron')
 const fs = require('fs')
 const path = require('path')
 
@@ -460,6 +460,7 @@ function createWindow() {
 app.whenReady().then(() => {
   console.log('[app] App ready, loading settings and creating window')
   loadSettings()
+  nativeTheme.themeSource = browserSettings.darkMode ? 'dark' : 'light'
   createWindow()
 
   ipcMain.on('renderer-ready', (event, headerHeight) => {
@@ -474,6 +475,7 @@ app.whenReady().then(() => {
       return
     }
     sendTabsState()
+    mainWindow.webContents.send('settings-updated', browserSettings)
   })
 
   ipcMain.on('create-tab', (event, url) => {
@@ -567,7 +569,13 @@ app.whenReady().then(() => {
     console.log('[IPC] settings-saved, settings:', settings)
     browserSettings = { ...browserSettings, ...settings }
     saveSettings()
+    nativeTheme.themeSource = browserSettings.darkMode ? 'dark' : 'light'
     mainWindow.webContents.send('settings-updated', settings)
+
+    const activeTab = getActiveTab()
+    if (activeTab && activeTab.view && !activeTab.view.webContents.isDestroyed()) {
+      activeTab.view.webContents.reload()
+    }
   })
 
   ipcMain.on('get-settings', (event) => {
