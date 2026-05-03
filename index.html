@@ -508,10 +508,7 @@
       darkMode: false
     }
 
-    // 下载历史管理
-    let downloadHistory = []
-
-    function loadDownloadHistory() {
+    function normalizeUrl(value) {
       const saved = localStorage.getItem('downloadHistory')
       if (saved) {
         downloadHistory = JSON.parse(saved)
@@ -589,12 +586,6 @@
     function openDownloadFile(filePath) {
       const { shell } = require('electron')
       shell.showItemInFolder(filePath)
-    }
-
-    function deleteDownloadHistory(id) {
-      downloadHistory = downloadHistory.filter(item => item.id !== id)
-      saveDownloadHistory()
-      renderDownloadHistory()
     }
 
     function normalizeUrl(value) {
@@ -693,7 +684,6 @@
 
     ipcRenderer.on('download-completed', (event, data) => {
       downloadProgress.textContent = '100%'
-      addDownloadToHistory(data.filename, data.url || '', data.total || 0, 'completed')
       setTimeout(() => {
         downloadStatus.style.display = 'none'
       }, 2000) // 2秒后隐藏
@@ -716,31 +706,6 @@
 
     ipcRenderer.on('tabs-updated', (event, state) => updateNav(state))
 
-    // 下载历史模态框控制
-    const downloadHistoryModal = document.getElementById('downloadHistoryModal')
-    const closeDownloadHistory = document.getElementById('closeDownloadHistory')
-    const closeDownloadHistoryBtn = document.getElementById('closeDownloadHistoryBtn')
-    const clearDownloadHistoryBtn = document.getElementById('clearDownloadHistory')
-
-    closeDownloadHistory.addEventListener('click', () => {
-      downloadHistoryModal.classList.remove('show')
-    })
-
-    closeDownloadHistoryBtn.addEventListener('click', () => {
-      downloadHistoryModal.classList.remove('show')
-    })
-
-    clearDownloadHistoryBtn.addEventListener('click', () => {
-      clearDownloadHistory()
-    })
-
-    // 点击模态框背景关闭
-    downloadHistoryModal.addEventListener('click', (event) => {
-      if (event.target === downloadHistoryModal) {
-        downloadHistoryModal.classList.remove('show')
-      }
-    })
-
     window.addEventListener('DOMContentLoaded', () => {
       // 加载保存的设置
       const savedSettings = localStorage.getItem('browserSettings')
@@ -751,44 +716,6 @@
         }
       }
       
-      // 加载下载历史
-      loadDownloadHistory()
-      
-      // 如果没有下载历史，添加一些示例数据
-      if (downloadHistory.length === 0) {
-        const exampleDownloads = [
-          {
-            id: Date.now() - 300000,
-            filename: 'example-image.jpg',
-            url: 'https://example.com/image.jpg',
-            size: 2048576,
-            status: 'completed',
-            timestamp: new Date(Date.now() - 300000).toISOString(),
-            path: require('path').join(require('os').homedir(), 'Downloads', 'example-image.jpg')
-          },
-          {
-            id: Date.now() - 600000,
-            filename: 'document.pdf',
-            url: 'https://example.com/document.pdf',
-            size: 5242880,
-            status: 'completed',
-            timestamp: new Date(Date.now() - 600000).toISOString(),
-            path: require('path').join(require('os').homedir(), 'Downloads', 'document.pdf')
-          },
-          {
-            id: Date.now() - 900000,
-            filename: 'failed-download.zip',
-            url: 'https://example.com/failed.zip',
-            size: 0,
-            status: 'failed',
-            timestamp: new Date(Date.now() - 900000).toISOString(),
-            path: require('path').join(require('os').homedir(), 'Downloads', 'failed-download.zip')
-          }
-        ]
-        downloadHistory = exampleDownloads
-        saveDownloadHistory()
-      }
-      
       const headerHeight = tabBar.getBoundingClientRect().height + toolbar.getBoundingClientRect().height
       ipcRenderer.send('renderer-ready', headerHeight)
 
@@ -796,17 +723,6 @@
       setTimeout(() => {
         downloadStatus.style.display = 'flex'
         downloadProgress.textContent = '50%'
-        
-        // 测试下载历史模态框
-        setTimeout(() => {
-          renderDownloadHistory()
-          document.getElementById('downloadHistoryModal').classList.add('show')
-          
-          // 5秒后自动关闭
-          setTimeout(() => {
-            document.getElementById('downloadHistoryModal').classList.remove('show')
-          }, 5000)
-        }, 2000)
       }, 1000)
     })
   </script>

@@ -80,7 +80,7 @@ function updateActiveViewBounds() {
   const bounds = getViewBounds()
   console.log(`[updateActiveViewBounds] Update bounds: x=${bounds.x}, y=${bounds.y}, width=${bounds.width}, height=${bounds.height}`)
   activeTab.view.setBounds(bounds)
-  activeTab.view.setAutoResize({ width: true, height: true })
+  // 移除setAutoResize，使用手动bounds控制
 }
 
 function activateTab(id) {
@@ -347,7 +347,8 @@ function createBrowserView(url) {
         mainWindow.webContents.send('download-completed', {
           filename: item.getFilename(),
           url: item.getURL(),
-          total: item.getTotalBytes()
+          total: item.getTotalBytes(),
+          path: item.getSavePath()
         })
         const { dialog } = require('electron')
         dialog.showMessageBox(mainWindow, {
@@ -443,6 +444,11 @@ function createWindow() {
   mainWindow.loadFile('index.html')
   console.log('[createWindow] Load index.html')
   mainWindow.on('resize', () => updateActiveViewBounds())
+  mainWindow.on('maximize', () => updateActiveViewBounds())
+  mainWindow.on('unmaximize', () => updateActiveViewBounds())
+  mainWindow.on('restore', () => updateActiveViewBounds())
+  mainWindow.on('enter-full-screen', () => updateActiveViewBounds())
+  mainWindow.on('leave-full-screen', () => updateActiveViewBounds())
   mainWindow.on('closed', () => {
     console.log('[createWindow] Main window closed')
     tabs.forEach(destroyTab)
@@ -567,6 +573,253 @@ app.whenReady().then(() => {
   ipcMain.on('get-settings', (event) => {
     console.log('[IPC] get-settings requested')
     event.sender.send('settings-loaded', browserSettings)
+  })
+
+  ipcMain.on('open-download-history', () => {
+    console.log('[IPC] open-download-history requested')
+    // 在新标签页中打开下载历史页面
+    const downloadHistoryUrl = `data:text/html;charset=utf-8,${encodeURIComponent(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>下载历史</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { 
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 32px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { 
+      font-size: 24px; 
+      margin-bottom: 24px; 
+      color: #333;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .download-item {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid #e9ecef;
+      transition: background 0.2s ease;
+    }
+    .download-item:hover {
+      background: #f8f9fa;
+    }
+    .download-item:last-child {
+      border-bottom: none;
+    }
+    .download-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-right: 16px;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+    .download-icon.completed {
+      background: #d4edda;
+      color: #155724;
+    }
+    .download-icon.failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .download-icon.downloading {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    .download-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .download-filename {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .download-details {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .download-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .download-action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    .download-action-btn.open {
+      background: #0066cc;
+      color: white;
+    }
+    .download-action-btn.open:hover {
+      background: #0052a3;
+    }
+    .download-action-btn.delete {
+      background: #dc3545;
+      color: white;
+    }
+    .download-action-btn.delete:hover {
+      background: #c82333;
+    }
+    .no-downloads {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .no-downloads i {
+      font-size: 64px;
+      margin-bottom: 16px;
+      display: block;
+      opacity: 0.5;
+    }
+    .clear-all-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 20px;
+      transition: background 0.2s ease;
+    }
+    .clear-all-btn:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="fas fa-history"></i>下载历史</h1>
+    <div id="downloadHistoryBody">
+      <!-- 下载历史内容将在这里动态生成 -->
+    </div>
+    <button class="clear-all-btn" onclick="clearAllDownloads()">清空所有记录</button>
+  </div>
+
+  <script>
+    // 从localStorage加载下载历史
+    let downloadHistory = []
+    
+    function loadDownloadHistory() {
+      const saved = localStorage.getItem('downloadHistory')
+      if (saved) {
+        downloadHistory = JSON.parse(saved)
+      }
+      renderDownloadHistory()
+    }
+    
+    function saveDownloadHistory() {
+      localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory))
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '未知'
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(1024))
+      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
+    }
+    
+    function formatDate(dateString) {
+      const date = new Date(dateString)
+      return date.toLocaleString('zh-CN')
+    }
+    
+    function renderDownloadHistory() {
+      const body = document.getElementById('downloadHistoryBody')
+      
+      if (downloadHistory.length === 0) {
+        body.innerHTML = \`
+          <div class="no-downloads">
+            <i class="fas fa-download"></i>
+            <div>暂无下载记录</div>
+          </div>
+        \`
+        return
+      }
+      
+      body.innerHTML = downloadHistory.map(download => \`
+        <div class="download-item">
+          <div class="download-icon \${download.status}">
+            <i class="fas fa-\${download.status === 'completed' ? 'check' : download.status === 'failed' ? 'times' : 'download'}"></i>
+          </div>
+          <div class="download-info">
+            <div class="download-filename" title="\${download.filename}">\${download.filename}</div>
+            <div class="download-details">
+              <span>大小: \${formatFileSize(download.size)}</span>
+              <span>时间: \${formatDate(download.timestamp)}</span>
+              <span>来源: \${new URL(download.url).hostname}</span>
+            </div>
+          </div>
+          <div class="download-actions">
+            \${download.status === 'completed' ? \`<button class="download-action-btn open" onclick="openDownloadFile('\${download.path.replace(/\\\\\\\\/g, '\\\\\\\\')}')">打开</button>\` : ''}
+            <button class="download-action-btn delete" onclick="deleteDownload(\${download.id})">删除</button>
+          </div>
+        </div>
+      \`).join('')
+    }
+    
+    function openDownloadFile(filePath) {
+      // 使用Electron的shell模块打开文件所在文件夹
+      const { shell } = require('electron')
+      shell.showItemInFolder(filePath)
+    }
+    
+    function deleteDownload(id) {
+      if (confirm('确定要删除这条下载记录吗？')) {
+        downloadHistory = downloadHistory.filter(item => item.id !== id)
+        saveDownloadHistory()
+        renderDownloadHistory()
+      }
+    }
+    
+    function clearAllDownloads() {
+      if (confirm('确定要清空所有下载历史记录吗？')) {
+        downloadHistory = []
+        saveDownloadHistory()
+        renderDownloadHistory()
+      }
+    }
+    
+    // 页面加载时显示下载历史
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDownloadHistory()
+    })
+  </script>
+</body>
+</html>
+    `)}`
+    createTab(downloadHistoryUrl, true)
   })
 })
 
