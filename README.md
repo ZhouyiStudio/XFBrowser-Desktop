@@ -8,6 +8,11 @@
 <p align="center">"Where simple browsing shines!"</p>
 <p align="center">一款简洁、高效、支持多标签页的跨平台桌面浏览器</p>
 
+<p align="center">
+  <img width="264" height="264" alt="CI-Status" src="https://github.com/ZhouyiStudio/XFBrowser-Desktop/actions/workflows/build.yml/badge.svg)](https://github.com/ZhouyiStudio/XFBrowser-Desktop/actions/workflows/build.yml" />
+</p>
+
+
 ## Star历史
 
 > [!TIP]
