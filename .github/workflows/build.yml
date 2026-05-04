@@ -1,4 +1,4 @@
-name: 构建XFBrowser-Desktop
+name: 构建 XFBrowser-Desktop
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: XF浏览器-${{ matrix.os }}
+        name: XFBrowser-Desktop-${{ matrix.os }}
         path: dist/
         retention-days: 30
 
