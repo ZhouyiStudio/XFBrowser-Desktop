@@ -17,10 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-
-    # 核心：只有提交信息 不包含 chore 才构建
     if: ${{ !contains(github.event.head_commit.message, 'chore') }}
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -42,14 +39,13 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: XF浏览器-${{ matrix.os }}
+          name: XFBrowser-${{ matrix.os }}
           path: dist/
           retention-days: 30
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    # 只有打标签才发布
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
