@@ -1,5 +1,15 @@
 
 # 安全策略
+<p align="center">
+  <img width="264" height="264" alt="XFBrowser" src="https://github.com/user-attachments/assets/474ecb61-0f86-42a5-8779-126fc4d665ce" />
+</p>
+<h1 align="center">XFBrowser</h1>
+<p align="center">"Where simple browsing shines!"</p>
+<p align="center">一款简洁、高效、支持多标签页的跨平台桌面浏览器</p>
+
+<p align="center">
+  <img width="264" height="264" alt="CI-Status" src="https://github.com/ZhouyiStudio/XFBrowser-Desktop/actions/workflows/build.yml/badge.svg" />
+</p>
 
 ## 支持版本
 本节说明本项目目前提供安全更新的版本。
