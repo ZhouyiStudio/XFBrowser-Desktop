@@ -3,13 +3,13 @@ name: Build and Release XFBrowser
 on:
   push:
     branches:
-      - '**'           # 所有分支 push 都触发
+      - '**'
     tags:
-      - 'v*'           # 打标签自动发布
+      - 'v*'
   pull_request:
     branches:
-      - 'main'
-      - 'master'
+      - main
+      - master
 
 jobs:
   build:
@@ -20,13 +20,17 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, 'chore') }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
+      # 🔥 修复 Windows 终止提示问题（核心修复）
       - name: Install dependencies
-        run: npm ci
+        shell: pwsh
+        run: |
+          npm install --legacy-peer-deps
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -49,9 +53,11 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
