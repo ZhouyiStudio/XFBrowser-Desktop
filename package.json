@@ -1,6 +1,6 @@
 {
   "name": "xfbrowser",
-  "version": "1.4.0-Release",
+  "version": "1.4.0",
   "description": "XFbrowser – Where simple browsing shines",
   "keywords": [
     "XFBrowser",
@@ -44,7 +44,6 @@
   "build": {
     "appId": "com.zhouyistudio.xfbrowser",
     "productName": "XFBrowser",
-    "icon": "build/icon",
     "directories": {
       "output": "dist"
     },
@@ -57,12 +56,19 @@
       "!node_modules/**/*"
     ],
     "win": {
+      "icon": "icons/icon.ico",
       "target": "nsis"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "mac": {
+      "icon": "icons/icon.icns",
       "target": "dmg"
     },
     "linux": {
+      "icon": "icons/icon.png",
       "target": "AppImage"
     }
   }
