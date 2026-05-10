@@ -20,7 +20,8 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, 'chore') }}
     steps:
       - uses: actions/checkout@v4
-
+          submodules: false  # 🔥 关键修复：禁用所有子模块操作
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
