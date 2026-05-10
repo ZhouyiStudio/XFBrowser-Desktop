@@ -1,12 +1,13 @@
 > [!IMPORTANT]
-> 1.2.5 Pre-Release 已发布，[#3](https://github.com/ZhouyiStudio/XFBrowser-Desktop/issues/3)问题仍未修复，敬请期待后续更新。
+> 1.4.0 Release 已发布，历时一个月，修复了 [#3](https://github.com/ZhouyiStudio/XFBrowser-Desktop/issues/3) 问题，敬请更新至最新版本😊！
+
 <p align="center">
   <img width="264" height="264" alt="XFBrowser" src="https://github.com/user-attachments/assets/474ecb61-0f86-42a5-8779-126fc4d665ce" />
 </p>
 
 <h1 align="center">XFBrowser</h1>
 <p align="center">"Where simple browsing shines!"</p>
-<p align="center">一款简洁、高效、支持多标签页的跨平台桌面浏览器</p>
+<p align="center">一款<b>简洁</b>、<b>高效</b>、<b>支持多标签页</b>的<b>跨平台桌面浏览器</b>！</p>
 
 <p align="center">
   <img width="264" height="264" alt="CI-Status" src="https://github.com/ZhouyiStudio/XFBrowser-Desktop/actions/workflows/build.yml/badge.svg" />
@@ -36,6 +37,7 @@
 
 > [!IMPORTANT]
 > 暂未支持安卓版本的隐私浏览功能，敬请期待后续更新。
+
 
 ## 贡献指南
 本项目基于 Electron 构建，`/docs` 目录使用 VitePress 搭建文档，依赖 Vue 相关组件。
