@@ -56,7 +56,6 @@
       "!node_modules/**/*"
     ],
     "win": {
-      "icon": "build/icon.ico",
       "target": "nsis"
     },
     "nsis": {
@@ -64,11 +63,9 @@
       "allowToChangeInstallationDirectory": true
     },
     "mac": {
-      "icon": "build/icon.icns",
       "target": "dmg"
     },
     "linux": {
-      "icon": "build/icon.png",
       "target": "AppImage"
     }
   }
