@@ -20,21 +20,20 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, 'chore') }}
     steps:
       - uses: actions/checkout@v4
-          submodules: false  # 🔥 关键修复：禁用所有子模块操作
+        with:
+          submodules: false
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # 🔥 核心修复：禁用 npm 缓存，避免卡死
       - name: Clean npm cache
         run: npm cache clean --force
 
-      # 🔥 核心修复：Windows 专用无卡死安装
       - name: Install dependencies
         shell: cmd
-        run: |
-          npm install --legacy-peer-deps --no-fund --no-audit
+        run: npm install --legacy-peer-deps --no-fund --no-audit
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -43,7 +42,7 @@ jobs:
       - name: Build app
         run: npm run dist
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -57,9 +56,11 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
