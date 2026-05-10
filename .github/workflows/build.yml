@@ -1,70 +1,17 @@
-name: Build and Release XFBrowser
-
-on:
-  push:
-    branches:
-      - '**'
-    tags:
-      - 'v*'
-  pull_request:
-    branches:
-      - main
-      - master
+name: Build XFBrowser
+on: push
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-2022, macos-latest, ubuntu-latest]
-    if: ${{ !contains(github.event.head_commit.message, 'chore') }}
+    runs-on: windows-2022
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: false
-          fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Clean npm cache
-        run: npm cache clean --force
-
-      - name: Install dependencies
-        shell: cmd
-        run: npm install --legacy-peer-deps --no-fund --no-audit
-
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y rpm libarchive-tools libgtk-3-dev libnotify-dev libasound2-dev
-
-      - name: Build app
-        run: npm run dist
+      - run: npm install
+      - run: npm run dist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: XFBrowser-${{ matrix.os }}
-          path: dist/
-          retention-days: 30
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifacts/**/*
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
