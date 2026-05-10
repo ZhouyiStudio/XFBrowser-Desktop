@@ -7,12 +7,12 @@ app.commandLine.appendSwitch('ignore-certificate-errors')
 app.disableHardwareAcceleration()
 
 console.warn('XFBrowser-Desktop Started!')
-const HOME_URL = 'https://www.baidu.com'
+const HOME_URL = 'xf://homepage'
 let VIEW_TOP = 96
 let mainWindow = null
 let settingsWindow = null
 let browserSettings = {
-  homePage: 'https://www.baidu.com',
+  homePage: 'xf://homepage',
   searchEngine: 'baidu',
   darkMode: false,
   downloadIntercept: true
@@ -60,6 +60,29 @@ function getViewBounds() {
   }
 }
 
+function resolveUrl(url) {
+  if (!url) return url
+  if (url === 'xf://homepage') return `file://${__dirname}/welcome.html`
+  if (url === 'xf://settings') return `file://${__dirname}/settings.html`
+  return url
+}
+
+function fileUrlPath(url) {
+  try {
+    return new URL(url).pathname
+  } catch (_) {
+    return null
+  }
+}
+
+function isMappedSpecialUrl(tabUrl, loadedUrl) {
+  const mapped = resolveUrl(tabUrl)
+  if (!mapped || !mapped.startsWith('file://')) return false
+  const mappedPath = fileUrlPath(mapped)
+  const loadedPath = fileUrlPath(loadedUrl)
+  return mappedPath && loadedPath && mappedPath === loadedPath
+}
+
 function sendTabsState() {
   if (!rendererReady || !mainWindow) return
   const activeTab = getActiveTab()
@@ -68,9 +91,10 @@ function sendTabsState() {
     activeTabId,
     url: activeTab ? activeTab.url : '',
     canGoBack: activeTab ? activeTab.view.webContents.navigationHistory.canGoBack() : false,
-    canGoForward: activeTab ? activeTab.view.webContents.navigationHistory.canGoForward() : false
+    canGoForward: activeTab ? activeTab.view.webContents.navigationHistory.canGoForward() : false,
+    isLoading: activeTab ? activeTab.view.webContents.isLoading() : false
   }
-  console.log(`[sendTabsState] Total tabs: ${tabs.length}, Active tab ID: ${activeTabId}, URL: ${state.url}`)
+  console.log(`[sendTabsState] Total tabs: ${tabs.length}, Active tab ID: ${activeTabId}, URL: ${state.url}, isLoading: ${state.isLoading}`)
   mainWindow.webContents.send('tabs-updated', state)
 }
 
@@ -133,8 +157,8 @@ function closeTab(id) {
   }
 }
 
-function createBrowserView(url) {
-  console.log(`[createBrowserView] Create BrowserView, URL: ${url}`)
+function createBrowserView(url, tabId) {
+  console.log(`[createBrowserView] Create BrowserView, URL: ${url}, Tab ID: ${tabId}`)
   const view = new BrowserView({
     webPreferences: {
       nodeIntegration: false,
@@ -149,8 +173,29 @@ function createBrowserView(url) {
     event.preventDefault()
     callback(true)
   })
+
+  view.webContents.on('did-start-loading', () => {
+    console.log(`[BrowserView] Start loading, Tab ID: ${tabId}`)
+    if (rendererReady && mainWindow) {
+      mainWindow.webContents.send('load-state-changed', { id: tabId, isLoading: true })
+    }
+  })
+
+  view.webContents.on('did-stop-loading', () => {
+    console.log(`[BrowserView] Stop loading, Tab ID: ${tabId}`)
+    if (rendererReady && mainWindow) {
+      mainWindow.webContents.send('load-state-changed', { id: tabId, isLoading: false })
+    }
+  })
+
+  view.webContents.on('did-fail-load', () => {
+    console.log(`[BrowserView] Load failed, Tab ID: ${tabId}`)
+    if (rendererReady && mainWindow) {
+      mainWindow.webContents.send('load-state-changed', { id: tabId, isLoading: false })
+    }
+  })
   
-  view.webContents.loadURL(url)
+  view.webContents.loadURL(resolveUrl(url))
   
   // 添加右键菜单
   view.webContents.on('context-menu', (event, params) => {
@@ -391,7 +436,7 @@ function createTab(url = HOME_URL, activate = true) {
   if (!mainWindow) return
   const id = Date.now() + Math.floor(Math.random() * 1000)
   console.log(`[createTab] Create new tab ID: ${id}, URL: ${url}, Activate: ${activate}`)
-  const view = createBrowserView(url)
+  const view = createBrowserView(url, id)
   const tab = { id, title: 'New Tab', url, view }
 
   view.webContents.on('page-title-updated', (event, title) => {
@@ -401,14 +446,20 @@ function createTab(url = HOME_URL, activate = true) {
   })
 
   view.webContents.on('did-navigate', () => {
-    tab.url = view.webContents.getURL()
-    console.log(`[BrowserView] Page navigated: ${tab.url}`)
+    const loadedUrl = view.webContents.getURL()
+    if (!isMappedSpecialUrl(tab.url, loadedUrl)) {
+      tab.url = loadedUrl
+    }
+    console.log(`[BrowserView] Page navigated: ${loadedUrl}, Display URL: ${tab.url}`)
     sendTabsState()
   })
 
   view.webContents.on('did-navigate-in-page', () => {
-    tab.url = view.webContents.getURL()
-    console.log(`[BrowserView] In-page navigation: ${tab.url}`)
+    const loadedUrl = view.webContents.getURL()
+    if (!isMappedSpecialUrl(tab.url, loadedUrl)) {
+      tab.url = loadedUrl
+    }
+    console.log(`[BrowserView] In-page navigation: ${loadedUrl}, Display URL: ${tab.url}`)
     sendTabsState()
   })
 
@@ -435,14 +486,15 @@ function createWindow() {
     height: 800,
     frame: false,
     titleBarStyle: 'hidden',
+    icon: path.join(__dirname, 'icons', 'icon.ico'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   })
 
-  mainWindow.loadFile('index.html')
-  console.log('[createWindow] Load index.html')
+  mainWindow.loadFile('mainpage.html')
+  console.log('[createWindow] Loaded MainPage')
   mainWindow.on('resize', () => updateActiveViewBounds())
   mainWindow.on('maximize', () => updateActiveViewBounds())
   mainWindow.on('unmaximize', () => updateActiveViewBounds())
@@ -471,7 +523,7 @@ app.whenReady().then(() => {
     }
     if (tabs.length === 0) {
       console.log(`[renderer-ready] Initialize, create welcome page`)
-      createTab('file://' + __dirname + '/welcome.html', true)
+      createTab(HOME_URL, true)
       return
     }
     sendTabsState()
@@ -495,7 +547,7 @@ app.whenReady().then(() => {
     const activeTab = getActiveTab()
     if (!activeTab) return
     activeTab.url = url
-    activeTab.view.webContents.loadURL(url)
+    activeTab.view.webContents.loadURL(resolveUrl(url))
     sendTabsState()
   })
   ipcMain.on('go-back', () => {
@@ -516,6 +568,12 @@ app.whenReady().then(() => {
     console.log(`[IPC] reload request`)
     const activeTab = getActiveTab()
     if (activeTab) activeTab.view.webContents.reload()
+  })
+
+  ipcMain.on('stop-loading', () => {
+    console.log(`[IPC] stop-loading request`)
+    const activeTab = getActiveTab()
+    if (activeTab) activeTab.view.webContents.stop()
   })
 
   ipcMain.on('window-minimize', () => {

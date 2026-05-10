@@ -1,6 +1,6 @@
 {
   "name": "xfbrowser",
-  "version": "1.3.1-Pre-release",
+  "version": "1.4.0",
   "description": "XFbrowser – Where simple browsing shines",
   "keywords": [
     "XFBrowser",
@@ -19,7 +19,7 @@
     "type": "git",
     "url": "git+https://github.com/ZhouyiStudio/XFBrowser-Desktop.git"
   },
-  "license": "Apache-2.0",
+  "license": "MIT",
   "author": "ZhouyiStudio",
   "type": "commonjs",
   "main": "main.js",
@@ -44,6 +44,7 @@
   "build": {
     "appId": "com.zhouyistudio.xfbrowser",
     "productName": "XFBrowser",
+    "icon": "build/icon",
     "directories": {
       "output": "dist"
     },
