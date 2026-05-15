@@ -50,6 +50,12 @@ function getActiveTab() {
   return tabs.find(tab => tab.id === activeTabId)
 }
 
+function updateWindowTitleForTab(tab) {
+  if (!mainWindow || !tab) return
+  const label = tab.title || tab.url || 'XFBrowser'
+  mainWindow.setTitle(`XFBrowser - ${label}`)
+}
+
 function getViewBounds() {
   const { width, height } = mainWindow.getContentBounds()
   return {
@@ -64,6 +70,8 @@ function resolveUrl(url) {
   if (!url) return url
   if (url === 'xf://homepage') return `file://${__dirname}/welcome.html`
   if (url === 'xf://settings') return `file://${__dirname}/settings.html`
+  if (url === 'xuanfeng://homepage') return `file://${__dirname}/welcome.html`
+  if (url === 'xuanfeng://settings') return `file://${__dirname}/settings.html`
   return url
 }
 
@@ -114,6 +122,7 @@ function activateTab(id) {
   activeTabId = id
   mainWindow.setBrowserView(tab.view)
   updateActiveViewBounds()
+  updateWindowTitleForTab(tab)
   sendTabsState()
 }
 
@@ -200,59 +209,90 @@ function createBrowserView(url, tabId) {
   // 添加右键菜单
   view.webContents.on('context-menu', (event, params) => {
     const menu = new Menu()
-    
-    // 后退
+
     menu.append(new MenuItem({
       label: '后退',
+      accelerator: 'Alt+Left',
       enabled: params.canGoBack,
       click: () => view.webContents.goBack()
     }))
-    
-    // 前进
+
     menu.append(new MenuItem({
       label: '前进',
+      accelerator: 'Alt+Right',
       enabled: params.canGoForward,
       click: () => view.webContents.goForward()
     }))
-    
+
     menu.append(new MenuItem({ type: 'separator' }))
-    
-    // 刷新
+
     menu.append(new MenuItem({
       label: '刷新',
+      accelerator: 'Ctrl+R',
       click: () => view.webContents.reload()
     }))
-    
-    // 强制刷新
+
     menu.append(new MenuItem({
       label: '强制刷新',
+      accelerator: 'Ctrl+Shift+R',
       click: () => view.webContents.reloadIgnoringCache()
     }))
-    
+
     menu.append(new MenuItem({ type: 'separator' }))
-    
-    // 检查元素 (仅在开发者模式下)
+
     if (params.hasSelection) {
       menu.append(new MenuItem({
         label: '复制',
+        accelerator: 'Ctrl+C',
         click: () => view.webContents.copy()
       }))
     }
-    
+
     menu.append(new MenuItem({
       label: '粘贴',
+      accelerator: 'Ctrl+V',
       enabled: params.canPaste,
       click: () => view.webContents.paste()
     }))
-    
+
     menu.append(new MenuItem({
       label: '全选',
+      accelerator: 'Ctrl+A',
       click: () => view.webContents.selectAll()
     }))
-    
+
     menu.append(new MenuItem({ type: 'separator' }))
-    
-    // 如果有链接，添加在新标签页中打开
+
+    menu.append(new MenuItem({
+      label: '另存为网页',
+      accelerator: 'Ctrl+S',
+      click: async () => {
+        const savePathResult = await require('electron').dialog.showSaveDialog(mainWindow, {
+          title: '保存网页为',
+          defaultPath: 'page.html',
+          filters: [
+            { name: 'HTML 文件', extensions: ['html'] }
+          ]
+        })
+
+        if (!savePathResult.canceled && savePathResult.filePath) {
+          const saveFilePath = savePathResult.filePath
+          console.log(`[Save Page] Saving current page to: ${saveFilePath}`)
+          view.webContents.savePage(saveFilePath, 'HTMLComplete')
+            .then(() => console.log('[Save Page] 页面已保存'))
+            .catch(error => console.error('[Save Page] 保存失败:', error))
+        }
+      }
+    }))
+
+    menu.append(new MenuItem({
+      label: '打印',
+      accelerator: 'Ctrl+P',
+      click: () => view.webContents.print()
+    }))
+
+    menu.append(new MenuItem({ type: 'separator' }))
+
     if (params.linkURL) {
       menu.append(new MenuItem({
         label: '在新标签页中打开链接',
@@ -260,14 +300,11 @@ function createBrowserView(url, tabId) {
       }))
       menu.append(new MenuItem({
         label: '复制链接地址',
-        click: () => {
-          clipboard.writeText(params.linkURL)
-        }
+        click: () => clipboard.writeText(params.linkURL)
       }))
       menu.append(new MenuItem({ type: 'separator' }))
     }
-    
-    // 如果有图片，添加图片相关选项
+
     if (params.srcURL) {
       menu.append(new MenuItem({
         label: '在新标签页中打开图片',
@@ -275,31 +312,29 @@ function createBrowserView(url, tabId) {
       }))
       menu.append(new MenuItem({
         label: '复制图片地址',
-        click: () => {
-          clipboard.writeText(params.srcURL)
-        }
+        click: () => clipboard.writeText(params.srcURL)
       }))
       menu.append(new MenuItem({ type: 'separator' }))
     }
-    
-    // 检查元素
-    menu.append(new MenuItem({
-      label: '检查元素',
-      click: () => view.webContents.inspectElement(params.x, params.y)
-    }))
-    
-    // 查看页面源代码
+
     menu.append(new MenuItem({
       label: '查看页面源代码',
+      accelerator: 'Ctrl+U',
       click: () => {
         const sourceUrl = `view-source:${view.webContents.getURL()}`
         createTab(sourceUrl, true)
       }
     }))
-    
+
+    menu.append(new MenuItem({
+      label: '检查元素',
+      accelerator: 'Ctrl+Shift+I',
+      click: () => view.webContents.inspectElement(params.x, params.y)
+    }))
+
     menu.popup()
   })
-  
+
   // 添加键盘快捷键
   view.webContents.on('before-input-event', (event, input) => {
     if (input.type === 'keyDown') {
@@ -442,6 +477,9 @@ function createTab(url = HOME_URL, activate = true) {
   view.webContents.on('page-title-updated', (event, title) => {
     tab.title = title || 'Page'
     console.log(`[BrowserView] Title updated: ${tab.title}`)
+    if (tab.id === activeTabId) {
+      updateWindowTitleForTab(tab)
+    }
     sendTabsState()
   })
 
@@ -451,6 +489,9 @@ function createTab(url = HOME_URL, activate = true) {
       tab.url = loadedUrl
     }
     console.log(`[BrowserView] Page navigated: ${loadedUrl}, Display URL: ${tab.url}`)
+    if (tab.id === activeTabId) {
+      updateWindowTitleForTab(tab)
+    }
     sendTabsState()
   })
 
@@ -486,6 +527,7 @@ function createWindow() {
     height: 800,
     frame: false,
     titleBarStyle: 'hidden',
+    title: 'XFBrowser',
     icon: path.join(__dirname, 'icons', 'icon.ico'),
     webPreferences: {
       nodeIntegration: true,
@@ -524,9 +566,10 @@ app.whenReady().then(() => {
     if (tabs.length === 0) {
       console.log(`[renderer-ready] Initialize, create welcome page`)
       createTab(HOME_URL, true)
-      return
+    } else {
+      sendTabsState()
     }
-    sendTabsState()
+    // 总是发送设置更新，无论是否是首次启动
     mainWindow.webContents.send('settings-updated', browserSettings)
   })
 
@@ -629,6 +672,7 @@ app.whenReady().then(() => {
     saveSettings()
     nativeTheme.themeSource = browserSettings.darkMode ? 'dark' : 'light'
     mainWindow.webContents.send('settings-updated', settings)
+    event.sender.send('settings-saved-ok')
 
     const activeTab = getActiveTab()
     if (activeTab && activeTab.view && !activeTab.view.webContents.isDestroyed()) {

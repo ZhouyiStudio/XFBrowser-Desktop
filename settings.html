@@ -174,7 +174,12 @@
         darkMode: darkModeCheckbox.checked,
         downloadIntercept: downloadInterceptCheckbox.checked
       }
+      saveBtn.disabled = true
+      saveBtn.textContent = '保存中...'
       ipcRenderer.send('settings-saved', settings)
+    })
+
+    ipcRenderer.on('settings-saved-ok', () => {
       window.close()
     })
 

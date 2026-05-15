@@ -28,8 +28,6 @@
     "test": "electron .",
     "build": "electron-builder",
     "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
     "dist": "electron-builder --publish=never",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",

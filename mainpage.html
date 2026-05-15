@@ -221,6 +221,25 @@
       color: white;
     }
 
+    /* 标签页关闭动画 */
+    .tab.closing {
+      animation: tabClose 0.25s ease-out forwards;
+      pointer-events: none; /* 防止动画期间再次点击 */
+      z-index: 10; /* 确保在其他标签页之上 */
+    }
+
+    @keyframes tabClose {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.9);
+        margin-right: -80px;
+      }
+    }
+
     .new-tab-btn {
       width: 32px;
       height: 32px;
@@ -634,7 +653,12 @@
 
         tabElement.querySelector('.tab-close').addEventListener('click', event => {
           event.stopPropagation()
-          ipcRenderer.send('close-tab', tab.id)
+          // 添加关闭动画
+          tabElement.classList.add('closing')
+          // 动画结束后发送关闭消息
+          setTimeout(() => {
+            ipcRenderer.send('close-tab', tab.id)
+          }, 250) // 与动画时长匹配
         })
 
         tabBar.insertBefore(tabElement, newTabBtn)
@@ -732,15 +756,6 @@
     ipcRenderer.on('tabs-updated', (event, state) => updateNav(state))
 
     window.addEventListener('DOMContentLoaded', () => {
-      // 加载保存的设置
-      const savedSettings = localStorage.getItem('browserSettings')
-      if (savedSettings) {
-        settings = JSON.parse(savedSettings)
-        if (settings.darkMode) {
-          document.body.style.filter = 'invert(1) hue-rotate(180deg)'
-        }
-      }
-      
       const headerHeight = tabBar.getBoundingClientRect().height + toolbar.getBoundingClientRect().height
       ipcRenderer.send('renderer-ready', headerHeight)
 
