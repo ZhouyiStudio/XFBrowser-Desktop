@@ -472,7 +472,7 @@ function createTab(url = HOME_URL, activate = true) {
   const id = Date.now() + Math.floor(Math.random() * 1000)
   console.log(`[createTab] Create new tab ID: ${id}, URL: ${url}, Activate: ${activate}`)
   const view = createBrowserView(url, id)
-  const tab = { id, title: 'New Tab', url, view }
+  const tab = { id, title: url && url.startsWith('view-source:') ? '查看源代码' : 'New Tab', url, view }
 
   view.webContents.on('page-title-updated', (event, title) => {
     tab.title = title || 'Page'
