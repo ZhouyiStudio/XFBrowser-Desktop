@@ -2,6 +2,9 @@ name: XFBrowser Build Workflow
 
 on: push
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build XFBrowser
@@ -38,6 +41,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout code
