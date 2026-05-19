@@ -438,27 +438,33 @@
             if (!query) return false;
 
             const engine = getCurrentEngine();
-            if (isValidUrl(query)) {
-                let url = query;
-                if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                    url = 'http://' + url;
-                }
-                window.location.href = url;
+            const safeUrl = normalizeHttpUrl(query);
+            if (safeUrl) {
+                window.location.href = safeUrl;
             } else {
                 window.location.href = engine.url + encodeURIComponent(query);
             }
             return false;
         }
 
-        function isValidUrl(input) {
-            if (input.startsWith('http://') || input.startsWith('https://')) return true;
-            if (input.includes('.') && !input.includes(' ')) {
-                const parts = input.split('.');
-                if (parts.length >= 2 && parts[parts.length - 1].length >= 2) {
-                    return true;
+        function normalizeHttpUrl(input) {
+            const candidate = (input.startsWith('http://') || input.startsWith('https://'))
+                ? input
+                : 'http://' + input;
+
+            try {
+                const parsed = new URL(candidate);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return parsed.href;
                 }
+            } catch (e) {
+                return null;
             }
-            return false;
+            return null;
+        }
+
+        function isValidUrl(input) {
+            return normalizeHttpUrl(input) !== null;
         }
 
         function updateClock() {
