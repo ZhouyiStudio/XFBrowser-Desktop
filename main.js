@@ -166,6 +166,44 @@ function closeTab(id) {
   }
 }
 
+// ── Chromium 错误码 → 名称映射 ──
+function getErrorName(code) {
+  const ERRORS = {
+    '-1':   'ERR_IO_PENDING',
+    '-2':   'ERR_FAILED',
+    '-3':   'ERR_ABORTED',
+    '-6':   'ERR_FILE_NOT_FOUND',
+    '-21':  'ERR_NETWORK_CHANGED',
+    '-23':  'ERR_INTERNET_DISCONNECTED',
+    '-24':  'ERR_NETWORK_ACCESS_DENIED',
+    '-27':  'ERR_NETWORK_IO_SUSPENDED',
+    '-100': 'ERR_CONNECTION_CLOSED',
+    '-101': 'ERR_CONNECTION_RESET',
+    '-102': 'ERR_CONNECTION_REFUSED',
+    '-104': 'ERR_CONNECTION_FAILED',
+    '-105': 'ERR_NAME_NOT_RESOLVED',
+    '-106': 'ERR_DNS_TIMED_OUT',
+    '-107': 'ERR_SSL_PROTOCOL_ERROR',
+    '-108': 'ERR_ADDRESS_UNREACHABLE',
+    '-109': 'ERR_ADDRESS_INVALID',
+    '-112': 'ERR_DNS_TIMED_OUT',
+    '-113': 'ERR_SSL_VERSION_OR_CIPHER_MISMATCH',
+    '-118': 'ERR_CONNECTION_TIMED_OUT',
+    '-200': 'ERR_CERT_COMMON_NAME_INVALID',
+    '-201': 'ERR_CERT_DATE_INVALID',
+    '-202': 'ERR_CERT_AUTHORITY_INVALID',
+    '-205': 'ERR_CERT_REVOKED',
+    '-206': 'ERR_CERT_INVALID',
+    '-207': 'ERR_CERT_WEAK_SIGNATURE_ALGORITHM',
+    '-301': 'ERR_TUNNEL_CONNECTION_FAILED',
+    '-310': 'ERR_TOO_MANY_REDIRECTS',
+    '-324': 'ERR_EMPTY_RESPONSE',
+    '-325': 'ERR_RESPONSE_HEADERS_TOO_BIG',
+    '-337': 'ERR_DNS_SEARCH_EMPTY'
+  }
+  return ERRORS[String(code)] || `ERR_UNKNOWN(${code})`
+}
+
 function createBrowserView(url, tabId) {
   console.log(`[createBrowserView] Create BrowserView, URL: ${url}, Tab ID: ${tabId}`)
   const view = new BrowserView({
@@ -197,11 +235,28 @@ function createBrowserView(url, tabId) {
     }
   })
 
-  view.webContents.on('did-fail-load', () => {
-    console.log(`[BrowserView] Load failed, Tab ID: ${tabId}`)
-    if (rendererReady && mainWindow) {
-      mainWindow.webContents.send('load-state-changed', { id: tabId, isLoading: false })
-    }
+  view.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    console.log(`[BrowserView] Load failed, Tab ID: ${tabId}, Error code: ${errorCode}, Description: ${errorDescription}, URL: ${validatedURL}, isMainFrame: ${isMainFrame}`)
+
+    if (!rendererReady || !mainWindow) return
+
+    // 始终通知渲染进程停止加载状态
+    mainWindow.webContents.send('load-state-changed', { id: tabId, isLoading: false })
+
+    // ── 只在主帧加载失败时显示错误页 ──
+    if (!isMainFrame) return
+
+    // 忽略 ERR_ABORTED（通常是用户主动取消导航）
+    if (errorCode === -3) return
+
+    // 忽略 xf:// 内部页面的加载失败
+    if (validatedURL && validatedURL.startsWith('xf://')) return
+
+    const errorName = getErrorName(errorCode)
+    const errorPageUrl = `file://${__dirname}/error.html?url=${encodeURIComponent(validatedURL || tab.url)}&errorCode=${encodeURIComponent(errorName)}&errorDesc=${encodeURIComponent(errorDescription || '')}`
+
+    console.log(`[BrowserView] Loading error page: ${errorPageUrl}`)
+    view.webContents.loadURL(errorPageUrl)
   })
   
   view.webContents.loadURL(resolveUrl(url))
